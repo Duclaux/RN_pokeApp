@@ -1,18 +1,24 @@
 import Card from "@/components/Card";
 import PokemonCard from "@/components/pokemon/PokemonCard";
 import { ThemedText } from "@/components/ThemedText";
+import { getPokemonId } from "@/functions/pokemon";
+import { useInfiniteFetchQuery } from "@/hooks/useFetchQuery";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { Image } from "expo-image";
-import { FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index() {
   const colors = useThemeColors();
+  /*
   const pokemons = Array.from({length: 100}, (_, k) => ({
     name: 'Pokemon name',
     id: k + 1
   }));
+  */
 
+  const {data, isFetching, fetchNextPage} = useInfiniteFetchQuery('/pokemon?limit=21');
+  const pokemons = data?.pages.flatMap(page => page.results) ?? [];
   return (
     <SafeAreaView style={[styles.container, {backgroundColor: colors.tint}]}>
       <View style={styles.header}>
@@ -20,18 +26,22 @@ export default function Index() {
           source={require("@/assets/pokeball.png")}
           style={{width: 40, height: 40}}
         />
-        <ThemedText variant="headline" color="grayLight">Pokemon</ThemedText>
+        <ThemedText variant="headline" color="grayLight">Pokedex</ThemedText>
       </View>
 
       <Card style={styles.body}>
         <FlatList
           data={pokemons}
           numColumns={3}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.url}
           contentContainerStyle={[styles.gridGap,  styles.list]}
           columnWrapperStyle={styles.gridGap}
+          ListFooterComponent={
+            isFetching ? <ActivityIndicator color={colors.tint} /> : null
+          }
+          onEndReached={() => fetchNextPage()}
           renderItem={
-            ({item}) => <PokemonCard id={item.id} name={item.name} style={{flex: 1/3}}/>
+            ({item}) => <PokemonCard id={getPokemonId(item.url)} name={item.name} style={{flex: 1/3}}/>
           }
           
         />
